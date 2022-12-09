@@ -41,6 +41,11 @@ func main() {
 	})
 
 	collector.OnError(func(response *colly.Response, err error) {
+		if response.StatusCode == 503 || response.StatusCode == 999 {
+			// ignore 503 and 999 status code to avoid flaky errors
+			return
+		}
+
 		fmt.Println(
 			"Error Visiting:\n",
 			response.Request.URL,
