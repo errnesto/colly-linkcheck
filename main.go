@@ -32,9 +32,13 @@ func main() {
 	})
 
 	collector.OnRequest(func(request *colly.Request) {
-		if request.URL.Scheme == "mailto" ||
-			strings.HasPrefix(request.URL.Path, "/journals") ||
-			strings.HasPrefix(request.URL.Path, "/books") ||
+		if request.URL.Scheme != "https" && request.URL.Scheme != "http" {
+			request.Abort()
+		}
+
+		// only check a single journal and book since checkin all of them would take too long
+		if (strings.HasPrefix(request.URL.Path, "/journals/") && !strings.HasPrefix(request.URL.Path, "/journals/msl")) ||
+			(strings.HasPrefix(request.URL.Path, "/books/") && !strings.HasPrefix(request.URL.Path, "/journals/esiam")) ||
 			strings.HasPrefix(request.URL.Path, "/content") {
 			request.Abort()
 		}
