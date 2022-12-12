@@ -15,5 +15,5 @@ jobs:
         steps:
         - name: Linkcheck
             # pin to current commit
-            uses: ems-press/colly-linkcheck@123ceceea385e0292cf13f7ad7aa2ba85335ab01
+            uses: ems-press/colly-linkcheck
 ```
