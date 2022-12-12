@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 
 	"github.com/gocolly/colly/v2"
@@ -20,8 +21,12 @@ func matchAny(urlPath string, patterns []string) bool {
 }
 
 func main() {
-	collector := colly.NewCollector(colly.Async())
+	exitCode := 0
+	defer func() {
+		os.Exit(exitCode)
+	}()
 
+	collector := colly.NewCollector(colly.Async())
 	collector.Limit(&colly.LimitRule{DomainGlob: "*", Parallelism: 8})
 
 	// Find and visit all links on ems.press pages
@@ -65,6 +70,7 @@ func main() {
 			return
 		}
 
+		exitCode = 1
 		fmt.Println(
 			"Error Visiting:\n",
 			response.Request.URL,
