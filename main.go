@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"net/url"
 	"os"
 	"regexp"
 
@@ -20,20 +22,49 @@ func matchAny(urlPath string, patterns []string) bool {
 	return false
 }
 
+type flagList []string
+
+func (list *flagList) String() string {
+	return fmt.Sprint(*list)
+}
+func (i *flagList) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
 func main() {
 	exitCode := 0
 	defer func() {
 		os.Exit(exitCode)
 	}()
 
+	type arrayFlags []string
+
+	var excludePatterns flagList
+	var includePatterns flagList
+
+	urlString := flag.String("url", "REQUIRED", "the url to start crawling")
+	flag.Var(&excludePatterns, "exclude", "list of regex patterns of url to exclude")
+	flag.Var(&includePatterns, "include", "list of regex patterns. This can be used to include a subset of urls, that were excluded via a broad `exclude` pattern")
+	flag.Parse()
+
+	startUrl, urlParseError := url.Parse(*urlString)
+	if *urlString == "REQUIRED" || urlParseError != nil {
+		fmt.Println("invalud startUrl provided (", startUrl, ")")
+		exitCode = 2
+		return
+	}
+
+	fmt.Println(excludePatterns)
+
 	collector := colly.NewCollector(colly.Async())
 	collector.Limit(&colly.LimitRule{DomainGlob: "*", Parallelism: 8})
 
-	// Find and visit all links on ems.press pages
+	// Find and visit all links on pages with same host as startUrl
 	collector.OnHTML("a[href]", func(element *colly.HTMLElement) {
 		url := element.Request.URL
 
-		if url.Host == "ems.press" {
+		if url.Host == startUrl.Host {
 			element.Request.Ctx.Put(element.Attr("href"), url.String())
 			element.Request.Visit(element.Attr("href"))
 		}
@@ -44,20 +75,9 @@ func main() {
 			request.Abort()
 		}
 
-		exclude := []string{
-			"^\\/journals\\/.*\\/articles.*",
-			"^\\/journals\\/.*\\/issues.*",
-			"^\\/books\\/.*\\/.*",
-		}
-		include := []string{
-			"^\\/journals\\/msl\\/articles.*",
-			"^\\/journals\\/msl\\/issues.*",
-			"^\\/books\\/esiam.*",
-		}
-
 		urlPath := request.URL.Path
-		matchedExclude := matchAny(urlPath, exclude)
-		matchedInclude := matchAny(urlPath, include)
+		matchedExclude := matchAny(urlPath, excludePatterns)
+		matchedInclude := matchAny(urlPath, includePatterns)
 
 		if matchedExclude && !matchedInclude {
 			request.Abort()
@@ -83,6 +103,6 @@ func main() {
 		)
 	})
 
-	collector.Visit("https://ems.press/")
+	collector.Visit(startUrl.String())
 	collector.Wait()
 }
