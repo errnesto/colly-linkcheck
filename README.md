@@ -1,9 +1,30 @@
 # colly-linkcheck
 
-Linkcheker that crawls ems.press and checks for dead links.
+Linkcheker that crawls a webpage and checks for dead links.
 
-Right now the url and the ignore patterns are hardcoded.
-Maybe we change that later so that can be customized.
+The crawler will check external links but will only parse content of pages with the same host as the provided start url.
+
+## usage (command line)
+
+```bash
+# parse complete page
+go run main.go --url "https://ems.press"
+
+# exclude path patterns. E.g. all paths startung with journals
+go run main.go --url "https://ems.press" --exclude "^\/journals*"
+
+# exclude multiple path patterns, but also include sub patterns:
+go run main.go \
+    --url "https://ems.press" \
+    \
+    --exclude "^\/journals\/.*\/articles.*" \
+	--exclude "^\/journals\/.*\/issues.*" \
+	--exclude "^\/books\/.*\/.*" \
+    \
+	--include "^\/journals\/msl\/articles.*" \
+	--include "^\/journals\/msl\/issues.*" \
+	--include "^\/books\/esiam.*"
+```
 
 ## use as github action
 
